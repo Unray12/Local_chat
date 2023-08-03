@@ -1,12 +1,12 @@
 import socket
 import threading
 
-HEADER = 64
+HEADER = 1024
 PORT = 5070
-SERVER = socket.gethostbyname(socket.gethostname())
+SERVER = socket.gethostbyname(socket.gethostname()) #get server IP
 ADDR = (SERVER, PORT)
 FORMAT = "utf-8"
-DISCONNECT_MESSAGE = "!DISCONNECT"
+DISCONNECT_MESSAGE = "!BYE"
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
@@ -30,7 +30,7 @@ def handleClient(conn, addr):
             #messageLength = conn.recv(HEADER).decode(FORMAT)
             #if messageLength:
                 #messageLength = int(messageLength)
-            message = conn.recv(1024).decode(FORMAT)
+            message = conn.recv(HEADER).decode(FORMAT)
             if message == DISCONNECT_MESSAGE:
                 connected = False
             if message != "":
@@ -50,7 +50,7 @@ def start():
     while True:
         conn, addr = server.accept()
         conn.send("!NICK".encode(FORMAT))
-        nickname = conn.recv(1024).decode(FORMAT)
+        nickname = conn.recv(HEADER).decode(FORMAT)
         
         nicknames.append(nickname)
         clientsList.append(conn)
