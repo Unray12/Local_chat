@@ -7,7 +7,7 @@ PORT = 5070
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!BYE"
 SERVER = "172.28.144.1" #IP of server
-ADDR = (SERVER, PORT)
+
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #sock stream is TCP protocol
 nickname = ""#input("Enter a nickname: ")
@@ -32,7 +32,8 @@ def setServer(IP):
     global SERVER
     SERVER = IP
 
-def connectToServer():   
+def connectToServer():
+    ADDR = (SERVER, PORT)   
     client.connect(ADDR)
 
 def recieve():
