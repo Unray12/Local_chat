@@ -1,5 +1,6 @@
 import socket
 import threading
+from time import sleep
 
 HEADER = 1024
 PORT = 5070
@@ -9,14 +10,33 @@ SERVER = "172.28.144.1" #IP of server
 ADDR = (SERVER, PORT)
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #sock stream is TCP protocol
-client.connect(ADDR)
-
-nickname = input("Enter a nickname: ")
+nickname = ""#input("Enter a nickname: ")
 
 connected = True
 
-def recieve():
+def closeClient():
     global connected
+    connected = False
+
+def disconnect():
+    global client
+    global connected
+    connected = False
+    client.close()
+
+def setName(name): #must have to rename in gui.py
+    global nickname
+    nickname = name
+
+def setServer(IP):
+    global SERVER
+    SERVER = IP
+
+def connectToServer():   
+    client.connect(ADDR)
+
+def recieve():
+    global conn
     while connected:
         try:
             message = client.recv(HEADER).decode(FORMAT)
@@ -26,8 +46,7 @@ def recieve():
                 print(message)
         except:
             print("Errors occured !!!")
-            connected = False
-            client.close()
+            disconnect()
                 
 def send(msg): # not use
         message = msg.encode(FORMAT)
@@ -47,14 +66,13 @@ def write():
                 connected = False
         except:
             print("Errors occured !!!")
-            connected = False
-            client.close()
+            disconnect()
 
-recieveThread = threading.Thread(target = recieve)
-recieveThread.start()
+# recieveThread = threading.Thread(target = recieve)
+# recieveThread.start()
 
-writeThread = threading.Thread(target = write)
-writeThread.start()
+# writeThread = threading.Thread(target = write)
+# writeThread.start()
 
     
      
