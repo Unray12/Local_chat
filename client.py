@@ -14,10 +14,6 @@ nickname = ""#input("Enter a nickname: ")
 
 connected = True
 
-def closeClient():
-    global connected
-    connected = False
-
 def disconnect():
     global client
     global connected
@@ -37,7 +33,7 @@ def connectToServer():
     client.connect(ADDR)
 
 def recieve():
-    global conn
+    global connected
     while connected:
         try:
             message = client.recv(HEADER).decode(FORMAT)
@@ -57,17 +53,25 @@ def send(msg): # not use
         client.send(sendLength)
         client.send(message)
 
-def write():
-    global connected
-    while connected:
-        try:
-            message = str(input())
-            client.send(message.encode(FORMAT))
-            if message == DISCONNECT_MESSAGE:
-                connected = False
-        except:
-            print("Errors occured !!!")
-            disconnect()
+def write(message):
+    try:
+        client.send(message.encode(FORMAT))
+    except:
+        print("Errors occured !!!")
+    if message == DISCONNECT_MESSAGE:
+        connected = False
+
+# def write():
+#     global connected
+#     while connected:
+#         try:
+#             message = str(input())
+#             client.send(message.encode(FORMAT))
+#             if message == DISCONNECT_MESSAGE:
+#                 connected = False
+#         except:
+#             print("Errors occured !!!")
+#             disconnect()
 
 # recieveThread = threading.Thread(target = recieve)
 # recieveThread.start()

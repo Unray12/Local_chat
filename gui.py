@@ -2,15 +2,32 @@ import socket
 import threading
 from tkinter import *
 from tkinter import Tk, Entry, messagebox
-from client import *
 
-GRAY = "#ABB2B9"
-BLUE = "0000FF"
-RED = "FF0000"
 
+
+HEADER = 1024
+PORT = 5070
+FORMAT = "utf-8"
+DISCONNECT_MESSAGE = "!BYE"
+SERVER = "172.28.144.1" #IP of server
 FONT = "Helvetica"
 
-class GUI:
+
+nickname = ''
+connected = True
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #sock stream is TCP protocol
+
+def disconnect():
+    global client
+    global connected
+    connected
+
+def connectToServer():
+    ADDR = (SERVER, PORT)   
+    client.connect(ADDR)
+
+
+class socketClient:
     def __init__(self):
         self.chatWindow = Tk()
         self.chatWindow.withdraw()
@@ -91,7 +108,7 @@ class GUI:
             self.login, 
             text="LOG IN",
             font=FONT + " 12 bold",
-            command=lambda: self.checkNullVal(self.inputName.get(), self.inputServer.get())
+            command=lambda: self.goToChat(self.inputName.get(), self.inputServer.get())
         )
         self.loginBtn.place(relx=0.4, rely=0.7)
         
@@ -99,27 +116,24 @@ class GUI:
         self.chatWindow.mainloop()
 
 
-
-    def checkNullVal(self, name, serverIP):
+    def goToChat(self, name, serverIP):
         if (name == '' or serverIP == ''):
             messagebox.showerror("Error !!!", "Please enter a name and server IP.")
         else:
-            self.goToChat(name, serverIP)
+            self.login.destroy()
+            
+            #set name and server
+            global nickname
+            global SERVER
+            nickname = name
+            SERVER = serverIP
 
+            self.chatBox(name)
 
-    def goToChat(self, name, serverIP):
-        self.login.destroy()
-        setName(name)
-        setServer(serverIP)
-        self.chatBox(name)
-
-        #start a thread
-        connectToServer()
-        recieveThread = threading.Thread(target = recieve)
-        recieveThread.start()
-
-        writeThread = threading.Thread(target = write)
-        writeThread.start()
+            #start a thread
+            connectToServer()
+            recieveThread = threading.Thread(target = self.recieve)
+            recieveThread.start()
 
 
     def chatBox(self, name):
@@ -157,7 +171,7 @@ class GUI:
 
         self.friendName = Label(
             self.chatWindow,
-            text = "Name of yout friend",
+            text = "Name of your friend",
             bg = "lightblue",
         )
         self.friendName.place(
@@ -204,7 +218,8 @@ class GUI:
         self.sendBtn = Button(
             self.inputChat,
             text = "send",
-            font = FONT + " 10"
+            font = FONT + " 10",
+            command=lambda: self.sendFunc(self.entryChat.get())
         )
         self.sendBtn.place(
             relx = 0.8,
@@ -222,5 +237,35 @@ class GUI:
         )
         textScrollbar.config(command=self.textBox.yview)
 
+    def sendFunc(self, message):
+        self.textBox.config(state=DISABLED)
+        self.entryChat.delete(0, END)
+        sendThread = threading.Thread(target=self.write(message))
+        sendThread.start()
 
-start = GUI()
+    def recieve(self):
+        global connected
+        while connected:
+            try:
+                message = client.recv(HEADER).decode(FORMAT)
+                if message == "!NICK":
+                    client.send(nickname.encode(FORMAT))
+                elif message != "":
+                    print(message)
+                    self.textBox.config(state = NORMAL)
+                    self.textBox.insert(END, message + "\n\n")
+                    self.textBox.config(state = DISABLED)
+                    self.textBox.see(END)
+            except:
+                print("Errors occured !!!")
+                disconnect()
+
+    def write(self, message):
+        try:
+            client.send(message.encode(FORMAT))
+        except:
+            print("Errors occured !!!")
+        if message == DISCONNECT_MESSAGE:
+            connected = False
+
+start = socketClient()
