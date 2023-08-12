@@ -1,7 +1,6 @@
 import socket
 import threading
 
-
 HEADER = 64
 PORT = 5070
 SERVER = socket.gethostbyname(socket.gethostname())
@@ -20,6 +19,30 @@ def broadcast(message):
     for clients in clientsList:
         clients.send(message)
 
+def private_chat(message, nickname, private_connections, conn, addr):
+    at_index = message.find("@")  # Find the index of the "@" symbol
+    space_index = message.find(" ", at_index)  # Find the index of the first spacing character after the "@"
+    
+    if space_index == -1:
+        print(f"[{addr}] ({nickname}): {message}")
+        broadcast(f"{nickname}: {message}".encode(FORMAT))
+        return
+
+    recipient = message[at_index+1:space_index]
+    real_message = message[space_index:]
+    person_exists = False
+    
+    for connection_info in private_connections:
+        wanted_name = connection_info[0]
+        if recipient == wanted_name:
+            person_exists = True
+            recipient_conn = connection_info[1]
+            recipient_conn.send(f"Private from {nickname}: {real_message}".encode(FORMAT))
+            break
+    
+    if not person_exists:
+        conn.send("The person is not in the chat".encode(FORMAT))
+
 def handleClient(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
 
@@ -36,35 +59,25 @@ def handleClient(conn, addr):
             if message == DISCONNECT_MESSAGE:
                 connected = False
             if message.startswith("@"):
-                at_index = message.find("@")  # Find the index of the "@" symbol
-                space_index = message.find(" ", at_index)  # Find the index of the first spacing character after the "@"
-                if space_index == -1:
-                    print(f"[{addr}] ({nickname}): {message}")
-                    broadcast(f"{nickname}: {message}".encode(FORMAT))
-                    continue
-                recipient = message[at_index+1:space_index]
-                real_message = message[space_index:]
-                person_exit = False
-                for connection_info in private_connections:
-                    wanted_name = connection_info[0]
-                    if recipient == wanted_name:
-                        person_exit = True
-                        recipient_conn = connection_info[1]
-                        recipient_conn.send(f"Private from {nickname}:{real_message}".encode(FORMAT))
-                        break
-                if not person_exit: # if the person is not existed
-                    conn.send(f"The person is not in the chat".encode(FORMAT))
+                private_chat(message, nickname, private_connections, conn, addr)
             elif message != "":
                 print(f"[{addr}] ({nickname}): {message}")
                 broadcast(f"{nickname}: {message}".encode(FORMAT))
-        except:
+        except Exception as e:
+            print(e)
             connected = False
     conn.send(f"You have left the chat".encode(FORMAT))
     conn.close()
     nicknames.remove(nickname)
     clientsList.remove(conn)
     broadcast(f"{nickname} has left the chat!".encode(FORMAT))
-        
+
+def stringOnlineUser():
+    ans = ""
+    for name in nicknames:
+        ans += name + " "
+    return ans
+
 def start():
     print("[STARTING] Server is starting ...")
     server.listen()
@@ -73,7 +86,9 @@ def start():
         conn, addr = server.accept()
         conn.send("!NICK".encode(FORMAT))
         nickname = conn.recv(1024).decode(FORMAT)
-        
+
+        broadcast(f"@#@{nickname}".encode(FORMAT)) #for display online user
+        conn.send(stringOnlineUser().encode(FORMAT))
         clientsList.append(conn)
         
         conn.send("Connected to server!\n".encode(FORMAT))

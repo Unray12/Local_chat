@@ -3,8 +3,6 @@ import threading
 from tkinter import *
 from tkinter import Tk, Entry, messagebox
 
-
-
 HEADER = 1024
 PORT = 5070
 FORMAT = "utf-8"
@@ -12,15 +10,16 @@ DISCONNECT_MESSAGE = "!BYE"
 SERVER = "172.28.144.1" #IP of server
 FONT = "Helvetica"
 
-
-nickname = ''
+onlineList = []
+nickname = ""
 connected = True
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #sock stream is TCP protocol
 
 def disconnect():
     global client
     global connected
-    connected
+    # connected = False
+    # client.close()
 
 def connectToServer():
     ADDR = (SERVER, PORT)   
@@ -28,6 +27,11 @@ def connectToServer():
 
 
 class socketClient:
+    
+    relYlist = 0 #for online list label
+    tagFriendHeight = 0.1
+    onlineLabel = []
+
     def __init__(self):
         self.chatWindow = Tk()
         self.chatWindow.withdraw()
@@ -115,7 +119,6 @@ class socketClient:
         
         self.chatWindow.mainloop()
 
-
     def goToChat(self, name, serverIP):
         if (name == '' or serverIP == ''):
             messagebox.showerror("Error !!!", "Please enter a name and server IP.")
@@ -126,7 +129,7 @@ class socketClient:
             global nickname
             global SERVER
             nickname = name
-            SERVER = serverIP
+            #SERVER = serverIP
 
             self.chatBox(name)
 
@@ -134,7 +137,6 @@ class socketClient:
             connectToServer()
             recieveThread = threading.Thread(target = self.recieve)
             recieveThread.start()
-
 
     def chatBox(self, name):
         self.chatWindow.deiconify()
@@ -158,7 +160,7 @@ class socketClient:
             rely = 0
         )
 
-        self.contactList = Label(
+        self.contactList = Frame(
             self.chatWindow,
             bg = "grey"
         )
@@ -237,7 +239,38 @@ class socketClient:
         )
         textScrollbar.config(command=self.textBox.yview)
 
-    def sendFunc(self, message):
+    def displayOnlineUser(self, friendName):
+        onlineList.append(friendName)
+
+        friendLabel =  Label(
+            self.contactList,
+            bg = "white",
+            text = friendName
+        )
+        friendLabel.place(
+            relx = 0,
+            rely = self.relYlist,
+            relheight = self.tagFriendHeight,
+            relwidth = 1
+        )
+        self.onlineLabel.append(friendLabel)
+        self.relYlist += self.tagFriendHeight
+
+    def destroyOfflineUser(self, friendName):
+        for i in range (len(onlineList)):
+            if offlineLabel[i].text == friendName:
+                offlineLabel[i].destroy()
+                self.onlineLabel.remove(offlineLabel[i])
+                onlineList.pop(i)
+                self.tagNameBubble(i)
+                break
+
+    def tagNameBubble(self, index):
+        for i in range (index, len(onlineList)):
+            tagName[i].rely -= self.tagFriendHeight
+        self.relYlist -= self.tagFriendHeight 
+
+    def sendFunc(self):
         self.textBox.config(state=DISABLED)
         self.entryChat.delete(0, END)
         sendThread = threading.Thread(target=self.write(message))
@@ -248,24 +281,40 @@ class socketClient:
         while connected:
             try:
                 message = client.recv(HEADER).decode(FORMAT)
-                if message == "!NICK":
-                    client.send(nickname.encode(FORMAT))
-                elif message != "":
+            except:
+                print("Errors occured !!!")
+                disconnect()
+            if message == "!NICK":
+                client.send(nickname.encode(FORMAT))
+            elif message != "":
+                code = message[0:3]
+                if code == "@#@":
+                    friendName = message[3:]
+                    self.displayOnlineUser(friendName)
+                    #pass
+                elif code == "#@#":
+                    onlineList = message[3:].split()
+                    for friend in onlineList:
+                        self.displayOnlineUser(friend)
+                elif code == "#$#":
+                    offName = message[3:]
+                    self.destroyOfflineUser(offName)
+                else:
                     print(message)
                     self.textBox.config(state = NORMAL)
                     self.textBox.insert(END, message + "\n\n")
                     self.textBox.config(state = DISABLED)
                     self.textBox.see(END)
-            except:
-                print("Errors occured !!!")
-                disconnect()
 
     def write(self, message):
         try:
-            client.send(message.encode(FORMAT))
+            if (message != ""):
+                client.send(message.encode(FORMAT))
         except:
-            print("Errors occured !!!")
+            print("Errors 2 occured !!!")
         if message == DISCONNECT_MESSAGE:
             connected = False
+
+
 
 start = socketClient()

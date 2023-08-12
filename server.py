@@ -38,11 +38,20 @@ def handleClient(conn, addr):
                 broadcast(f"{nickname}: {message}".encode(FORMAT))
         except:
             connected = False
+    broadcast(f"#$#{nickname}".encode(FORMAT))
     conn.close()
     nicknames.remove(nickname)
     clientsList.remove(conn)
     broadcast(f"{nickname} has left the chat!".encode(FORMAT))
-        
+
+
+def stringOnlineUser():
+    ans = "#@#"
+    for name in nicknames:
+        ans += name + " "
+    return ans
+
+
 def start():
     print("[STARTING] Server is starting ...")
     server.listen()
@@ -52,6 +61,9 @@ def start():
         conn.send("!NICK".encode(FORMAT))
         nickname = conn.recv(HEADER).decode(FORMAT)
         
+        broadcast(f"@#@{nickname}".encode(FORMAT)) #for display online user
+        conn.send(stringOnlineUser().encode(FORMAT))
+
         nicknames.append(nickname)
         clientsList.append(conn)
        

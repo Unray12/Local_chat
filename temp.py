@@ -1,0 +1,3 @@
+ans = ""
+
+print(ans.split())
