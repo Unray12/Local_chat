@@ -38,10 +38,10 @@ def handleClient(conn, addr):
                 broadcast(f"{nickname}: {message}".encode(FORMAT))
         except:
             connected = False
-    broadcast(f"#$#{nickname}".encode(FORMAT))
     conn.close()
     nicknames.remove(nickname)
     clientsList.remove(conn)
+    broadcast(f"#$#{nickname}".encode(FORMAT)) #delete tag name
     broadcast(f"{nickname} has left the chat!".encode(FORMAT))
 
 

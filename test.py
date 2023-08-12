@@ -37,11 +37,12 @@ def private_chat(message, nickname, private_connections, conn, addr):
         if recipient == wanted_name:
             person_exists = True
             recipient_conn = connection_info[1]
-            recipient_conn.send(f"Private from {nickname}: {real_message}".encode(FORMAT))
+
+            recipient_conn.send(f"$#${nickname}: {real_message}".encode(FORMAT))
             break
     
-    if not person_exists:
-        conn.send("The person is not in the chat".encode(FORMAT))
+    # if not person_exists:
+    #     conn.send("The person is not in the chat".encode(FORMAT))
 
 def handleClient(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
@@ -70,10 +71,11 @@ def handleClient(conn, addr):
     conn.close()
     nicknames.remove(nickname)
     clientsList.remove(conn)
+    broadcast(f"#$#{nickname}".encode(FORMAT))
     broadcast(f"{nickname} has left the chat!".encode(FORMAT))
 
 def stringOnlineUser():
-    ans = ""
+    ans = "#@#"
     for name in nicknames:
         ans += name + " "
     return ans
