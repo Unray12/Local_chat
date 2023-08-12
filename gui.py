@@ -7,7 +7,7 @@ HEADER = 1024
 PORT = 5070
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!BYE"
-SERVER = "192.168.0.101" #IP of server
+SERVER = "172.28.144.1" #IP of server
 FONT = "Helvetica"
 
 onlineList = []
@@ -135,6 +135,7 @@ class socketClient:
 
             self.chatBox(name)
             self.displayOnlineUser("GROUP CHAT")
+            #self.onlineScreen[0].place()
             self.currentFriend = "GROUP CHAT"
             #start a thread
             connectToServer()
@@ -143,9 +144,9 @@ class socketClient:
 
     def chatBox(self, name):
         self.chatWindow.deiconify()
-        self.chatWindow.title("Chat Box")
-        self.chatWindow.resizable(width=FALSE, height=FALSE)
-        self.chatWindow.configure(width=700, height=800)
+        # self.chatWindow.title("Chat Box")
+        # self.chatWindow.resizable(width=FALSE, height=FALSE)
+        # self.chatWindow.configure(width=700, height=800)
 
         self.chatWindow.title("Chat Box")
         self.chatWindow.resizable(width=FALSE, height=FALSE)
@@ -261,26 +262,27 @@ class socketClient:
             relheight = self.tagFriendHeight,
             relwidth = 1
         )
-        friendLabel.bind('<button-1>', self.clickTagName(friendName))
+        friendLabel.bind('<Button-1>', lambda event, arg = friendName: self.clickLabel(event, arg))
 
         self.onlineLabel.append(friendLabel)
         self.relYlist += self.tagFriendHeight
 
         #create private screen
-        privateScreen = Text(
-            self.chatWindow,
-            bg = "white",
-        )
-        privateScreen.place(
-            relx = 0.25,
-            rely = 0.1,
-            relheight = 0.8,
-            relwidth = 0.75
-        )
-        privateScreen.config(state=DISABLED)
-        privateScreen.pack_forget()
+        if (friendName != "GROUP CHAT"):
+            privateScreen = Text(
+                self.chatWindow,
+                bg = "white",
+            )
+            privateScreen.place(
+                relx = 0.25,
+                rely = 0.1,
+                relheight = 0.8,
+                relwidth = 0.75
+            )
+            privateScreen.config(state=DISABLED)
+            privateScreen.place_forget()
+            self.onlineScreen.append(privateScreen)
 
-        self.onlineScreen.append(privateScreen)
     def destroyOfflineUser(self, friendName):
         for i in range (len(onlineList)):
             if self.onlineLabel[i].cget("text") == friendName:
@@ -297,12 +299,17 @@ class socketClient:
             currentRely += self.tagFriendHeight
         self.relYlist -= self.tagFriendHeight 
 
-    def clickTagName(self, nameTag):
-        indexName = onlineList.index(nameTag)
+    def clickLabel(self, event, nameTag):
+        self.clickTagName(nameTag)
 
-        self.currentScreen.pack_forget()
+    def clickTagName(self, nameTag):
+        print("click")
+        indexName = onlineList.index(nameTag)
+        self.currentFriend = nameTag
+        self.currentScreen.place_forget()
         self.currentScreen = self.onlineScreen[indexName]
-        self.currentScreen.pack()
+        self.currentScreen.place()
+        self.currentScreen.see(END)
 
     def sendFunc(self, message):
         self.textBox.config(state=DISABLED)
@@ -358,14 +365,12 @@ class socketClient:
 
             if (message != ""):
                 if self.currentFriend != "GROUP CHAT":
-                    client.send(self.addPrivateCode(message).encode(FORMAT))
+                    client.send(self.addPrivateCode(self.currentFriend, message).encode(FORMAT))
                 else:
                     client.send(message.encode(FORMAT))
         except:
             print("Errors 2 occured !!!")
         if message == DISCONNECT_MESSAGE:
             connected = False
-
-
 
 start = socketClient()
