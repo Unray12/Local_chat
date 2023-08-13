@@ -131,7 +131,7 @@ class socketClient:
             global nickname
             global SERVER
             nickname = name
-            #SERVER = serverIP
+            SERVER = serverIP
 
             self.chatBox(name)
             self.displayOnlineUser("GROUP CHAT")
