@@ -6,7 +6,7 @@ from tkinter import Tk, Entry, messagebox
 HEADER = 1024
 PORT = 5070
 FORMAT = "utf-8"
-DISCONNECT_MESSAGE = "!BYE"
+DISCONNECT_MESSAGE = "bye"
 SERVER = "172.28.144.1" #IP of server
 FONT = "Helvetica"
 
@@ -21,8 +21,11 @@ def disconnect():
     client.close()
 
 def connectToServer():
-    ADDR = (SERVER, PORT)   
-    client.connect(ADDR)
+    ADDR = (SERVER, PORT)
+    try:   
+        client.connect(ADDR)
+    except:
+        print("cannot connect !!!")
 
 class socketClient:
     
@@ -297,8 +300,11 @@ class socketClient:
     def destroyOfflineUser(self, friendName):
         for i in range (len(self.onlineList)):
             if self.onlineLabel[i].cget("text") == friendName:
+                print("1111")
                 self.onlineLabel[i].destroy()
+                self.onlineScreen[i].destroy()
                 self.onlineLabel.remove(self.onlineLabel[i])
+                self.onlineScreen.remove(self.onlineScreen[i])
                 self.onlineList.pop(i)
                 self.tagNameBubble(i)
                 break
@@ -338,11 +344,20 @@ class socketClient:
     def takeName(self, message, symbol):
         return message[3:message.index(symbol)]
 
+    def writeText(self, text, index):
+        screen = self.onlineScreen[index]
+        screen.config(state = NORMAL)
+        screen.insert(END, text)
+        screen.config(state = DISABLED)
+        screen.see(END)
+
     def recieve(self):
         global connected
         while connected:
             try:
                 message = client.recv(HEADER).decode(FORMAT)
+                if message == DISCONNECT_MESSAGE:
+                    connected = False
             except:
                 print("Errors occured !!!")
                 disconnect()
@@ -354,48 +369,47 @@ class socketClient:
                     friendName = message[3:]
                     self.displayOnlineUser(friendName)
                     #pass
-                elif code == "#@#":
+                elif code == "#@#": #new connection, for appear current online 
                     friendList = message[3:].split()
                     for i in range (len(friendList)):
                         self.displayOnlineUser(friendList[i])
-                elif code == "#$#":
-                    offName = message[3:]
-                    self.destroyOfflineUser(offName)
-                elif code == "$#$":
-                    friendName = self.takeName(message, ":")
-                    friendScreen = self.onlineScreen[self.onlineList.index(friendName)] 
-                    friendScreen.config(state = NORMAL)
-                    friendScreen.insert(END, message[3:] + "\n\n")
-                    friendScreen.config(state = DISABLED)
-                    friendScreen.see(END)
-                elif code == "$%$":
-                    friendName = self.takeName(message, "#")
-                    friendScreen = self.onlineScreen[self.onlineList.index(friendName)] 
-                    friendScreen.config(state = NORMAL)
-                    friendScreen.insert(END, message[4 + len(friendName):] + "\n\n")
-                    friendScreen.config(state = DISABLED)
-                    friendScreen.see(END)
-                else:
+                elif code == "#$#": #for destroy offline user
+                    print("hhh")
                     print(message)
-                    self.textBox.config(state = NORMAL)
-                    self.textBox.insert(END, message + "\n\n")
-                    self.textBox.config(state = DISABLED)
-                    self.textBox.see(END)
+                    offName = self.takeName(message, " ")
+                    print("kkk")
+                    print(offName)
+                    self.destroyOfflineUser(offName)
+                    self.writeText(message[3:] + "\n\n", 0)
+                elif code == "$#$": #for reciever in private chat
+                    print("bbb")
+                    friendName = self.takeName(message, ":")
+                    self.writeText(message[3:] + "\n\n", self.onlineList.index(friendName)) 
+                elif code == "$%$": #for recipient in private chat
+                    print("ccc")
+                    friendName = self.takeName(message, "#")
+                    self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName)) 
+                else: #group chat
+                    print(message)
+                    print("xxx")
+                    self.writeText(message + "\n\n", 0) 
+        print("B")
 
     def addPrivateCode(self, friendName, message):
         return "@" + friendName + " " + message
 
     def write(self, message):
         try:
-
             if (message != ""):
                 if self.currentFriend != "GROUP CHAT":
                     client.send(self.addPrivateCode(self.currentFriend, message).encode(FORMAT))
                 else:
                     client.send(message.encode(FORMAT))
+                    if message == DISCONNECT_MESSAGE:
+                        connected = False
         except:
             print("Errors 2 occured !!!")
-        if message == DISCONNECT_MESSAGE:
-            connected = False
+        print("a")
+        
 
 start = socketClient()

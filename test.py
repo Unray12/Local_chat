@@ -54,26 +54,24 @@ def handleClient(conn, addr):
     connected = True
     while connected:
         try:
-            #messageLength = conn.recv(HEADER).decode(FORMAT)
-            #if messageLength:
-                #messageLength = int(messageLength)
             message = conn.recv(1024).decode(FORMAT)
-            if message == DISCONNECT_MESSAGE:
-                connected = False
-            if message.startswith("@"):
-                private_chat(message, nickname, private_connections, conn, addr)
-            elif message != "":
+            
+            if message != "":
                 print(f"[{addr}] ({nickname}): {message}")
                 broadcast(f"{nickname}: {message}".encode(FORMAT))
+                if message == DISCONNECT_MESSAGE:
+                    connected = False
+                    conn.send(f"You have left the chat".encode(FORMAT))
+                elif message.startswith("@"):
+                    private_chat(message, nickname, private_connections, conn, addr)
+
         except Exception as e:
             print(e)
             connected = False
-    conn.send(f"You have left the chat".encode(FORMAT))
     conn.close()
     nicknames.remove(nickname)
     clientsList.remove(conn)
-    broadcast(f"#$#{nickname}".encode(FORMAT))
-    broadcast(f"{nickname} has left the chat!".encode(FORMAT))
+    broadcast(f"#$#{nickname} has left the chat!".encode(FORMAT))
 
 def stringOnlineUser():
     ans = "#@#"
@@ -94,13 +92,13 @@ def start():
         conn.send(stringOnlineUser().encode(FORMAT))
         clientsList.append(conn)
         
-        conn.send("Connected to server!\n".encode(FORMAT))
-        broadcast(f"{nickname} joined the chat!\n".encode(FORMAT))
+        conn.send("Connected to server!".encode(FORMAT))
+        broadcast(f"{nickname} joined the chat!".encode(FORMAT))
 
         if not nicknames:
-            conn.send(f"Nobody is in the chat room!\n".encode(FORMAT))
+            conn.send(f"Nobody is in the chat room!".encode(FORMAT))
         else: 
-            conn.send(f"People currently in the chat room:\n".encode(FORMAT))
+            conn.send(f"People currently in the chat room:".encode(FORMAT))
             for people in nicknames:
                 conn.send(f"{people}; ".encode(FORMAT))
         
