@@ -38,7 +38,7 @@ def private_chat(message, nickname, private_connections, conn, addr):
             person_exists = True
             recipient_conn = connection_info[1]
             
-            conn.send(f"$#${wanted_name}: {real_message}".encode(FORMAT))
+            conn.send(f"$%${wanted_name}#{nickname}: {real_message}".encode(FORMAT))
             recipient_conn.send(f"$#${nickname}: {real_message}".encode(FORMAT))
             break
     

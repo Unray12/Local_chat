@@ -24,7 +24,6 @@ def connectToServer():
     ADDR = (SERVER, PORT)   
     client.connect(ADDR)
 
-
 class socketClient:
     
     relYlist = 0 #for online list label
@@ -131,7 +130,7 @@ class socketClient:
             global nickname
             global SERVER
             nickname = name
-            SERVER = serverIP
+            #SERVER = serverIP
 
             self.chatBox(name)
             self.displayOnlineUser("GROUP CHAT")
@@ -336,8 +335,8 @@ class socketClient:
         sendThread = threading.Thread(target=self.write(message))
         sendThread.start()
 
-    def takeName(self, message):
-        return message[3:message.index(":")]
+    def takeName(self, message, symbol):
+        return message[3:message.index(symbol)]
 
     def recieve(self):
         global connected
@@ -363,11 +362,17 @@ class socketClient:
                     offName = message[3:]
                     self.destroyOfflineUser(offName)
                 elif code == "$#$":
-                    friendName = self.takeName(message)
+                    friendName = self.takeName(message, ":")
                     friendScreen = self.onlineScreen[self.onlineList.index(friendName)] 
                     friendScreen.config(state = NORMAL)
-                    print(message)
                     friendScreen.insert(END, message[3:] + "\n\n")
+                    friendScreen.config(state = DISABLED)
+                    friendScreen.see(END)
+                elif code == "$%$":
+                    friendName = self.takeName(message, "#")
+                    friendScreen = self.onlineScreen[self.onlineList.index(friendName)] 
+                    friendScreen.config(state = NORMAL)
+                    friendScreen.insert(END, message[4 + len(friendName):] + "\n\n")
                     friendScreen.config(state = DISABLED)
                     friendScreen.see(END)
                 else:
