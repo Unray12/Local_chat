@@ -1,3 +1,3 @@
-ans = ""
+ans = "a b c d "
 
-print(ans.split())
+print("aa" == 'aa')

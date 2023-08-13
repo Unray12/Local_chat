@@ -10,7 +10,6 @@ DISCONNECT_MESSAGE = "!BYE"
 SERVER = "172.28.144.1" #IP of server
 FONT = "Helvetica"
 
-onlineList = []
 nickname = ""
 connected = True
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #sock stream is TCP protocol
@@ -32,6 +31,7 @@ class socketClient:
     tagFriendHeight = 0.1
     onlineLabel = []
     onlineScreen = []
+    onlineList = []
     #self.currentScreen = self.textBox
 
     def __init__(self):
@@ -187,21 +187,33 @@ class socketClient:
             relwidth = 0.75
         )
 
-        self.textBox = Text(
+
+        self.textBoxFrame = Frame(
             self.chatWindow,
-            bg = "white",
+            bg = "red",
         )
-        self.textBox.place(
+        self.textBoxFrame.place(
             relx = 0.25,
             rely = 0.1,
             relheight = 0.8,
             relwidth = 0.75
         )
+
+        self.textBox = Text(
+            self.textBoxFrame,
+            bg = "white",
+        )
+        self.textBox.place(
+            relx = 0,
+            rely = 0,
+            relheight = 1,
+            relwidth = 1
+        )
         self.textBox.config(state=DISABLED)
         self.currentScreen = self.textBox
         self.onlineScreen.append(self.textBox)
 
-        self.inputChat = Label(
+        self.inputChat = Frame(
             self.chatWindow,
             bg = "grey"
         )
@@ -213,14 +225,14 @@ class socketClient:
         )
 
         self.entryChat = Entry(
-            self.chatWindow,
+            self.inputChat,
             font = FONT + " 14"
         )
         self.entryChat.place(
-            relx = 0.25,
-            rely = 0.9,
-            relheight = 0.1,
-            relwidth = 0.6
+            relx = 0,
+            rely = 0,
+            relheight = 1,
+            relwidth = 0.8
         )
 
         self.sendBtn = Button(
@@ -236,7 +248,7 @@ class socketClient:
             relwidth = 0.2
         )
 
-        textScrollbar = Scrollbar(self.textBox)
+        textScrollbar = Scrollbar(self.textBoxFrame)
         textScrollbar.place(
             relx = 0.9738,
             rely = 0,
@@ -247,8 +259,8 @@ class socketClient:
 
     def displayOnlineUser(self, friendName):
         #display tag name
-        onlineList.append(friendName)
-
+        self.onlineList.append(friendName)
+        #print(self.onlineList)
         friendLabel = Label(
             self.contactList,
             bg = "white",
@@ -270,31 +282,31 @@ class socketClient:
         #create private screen
         if (friendName != "GROUP CHAT"):
             privateScreen = Text(
-                self.chatWindow,
+                self.textBoxFrame,
                 bg = "white",
             )
             privateScreen.place(
-                relx = 0.25,
-                rely = 0.1,
-                relheight = 0.8,
-                relwidth = 0.75
+                relx = 0,
+                rely = 0,
+                relheight = 1,
+                relwidth = 1
             )
             privateScreen.config(state=DISABLED)
             privateScreen.place_forget()
             self.onlineScreen.append(privateScreen)
 
     def destroyOfflineUser(self, friendName):
-        for i in range (len(onlineList)):
+        for i in range (len(self.onlineList)):
             if self.onlineLabel[i].cget("text") == friendName:
                 self.onlineLabel[i].destroy()
                 self.onlineLabel.remove(self.onlineLabel[i])
-                onlineList.pop(i)
+                self.onlineList.pop(i)
                 self.tagNameBubble(i)
                 break
 
     def tagNameBubble(self, index):
         currentRely = self.tagFriendHeight * (index + 1)
-        for i in range (index, len(onlineList)):
+        for i in range (index, len(self.onlineList)):
             self.onlineLabel[i].place(rely = currentRely - self.tagFriendHeight)
             currentRely += self.tagFriendHeight
         self.relYlist -= self.tagFriendHeight 
@@ -302,13 +314,20 @@ class socketClient:
     def clickLabel(self, event, nameTag):
         self.clickTagName(nameTag)
 
+    def appearPrivateSreen(self, index):
+        self.onlineScreen[index].place(
+            relx = 0,
+            rely = 0,
+            relheight = 1,
+            relwidth = 1
+        )
+
     def clickTagName(self, nameTag):
-        print("click")
-        indexName = onlineList.index(nameTag)
+        indexName = self.onlineList.index(nameTag)
         self.currentFriend = nameTag
         self.currentScreen.place_forget()
         self.currentScreen = self.onlineScreen[indexName]
-        self.currentScreen.place()
+        self.appearPrivateSreen(indexName)
         self.currentScreen.see(END)
 
     def sendFunc(self, message):
@@ -318,7 +337,7 @@ class socketClient:
         sendThread.start()
 
     def takeName(self, message):
-        return message[3:message.index(":") + 1]
+        return message[3:message.index(":")]
 
     def recieve(self):
         global connected
@@ -337,17 +356,18 @@ class socketClient:
                     self.displayOnlineUser(friendName)
                     #pass
                 elif code == "#@#":
-                    onlineList = message[3:].split()
-                    for friend in onlineList:
-                        self.displayOnlineUser(friend)
+                    friendList = message[3:].split()
+                    for i in range (len(friendList)):
+                        self.displayOnlineUser(friendList[i])
                 elif code == "#$#":
                     offName = message[3:]
                     self.destroyOfflineUser(offName)
                 elif code == "$#$":
                     friendName = self.takeName(message)
-                    friendScreen = self.onlineScreen[onlineList.index(friendName)]
+                    friendScreen = self.onlineScreen[self.onlineList.index(friendName)] 
                     friendScreen.config(state = NORMAL)
-                    friendScreen.insert(END, message + "\n\n")
+                    print(message)
+                    friendScreen.insert(END, message[3:] + "\n\n")
                     friendScreen.config(state = DISABLED)
                     friendScreen.see(END)
                 else:
