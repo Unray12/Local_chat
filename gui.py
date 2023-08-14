@@ -381,13 +381,14 @@ class socketClient:
                     print(offName)
                     self.destroyOfflineUser(offName)
                     self.writeText(message[3:] + "\n\n", 0)
-                elif code == "$#$": #for reciever in private chat
+                elif code == "$#$": #for recipient in private chat
                     print("bbb")
                     friendName = self.takeName(message, ":")
                     self.writeText(message[3:] + "\n\n", self.onlineList.index(friendName)) 
-                elif code == "$%$": #for recipient in private chat
+                elif code == "$%$": #for sender in private chat
                     print("ccc")
                     friendName = self.takeName(message, "#")
+                    print(friendName) 
                     self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName)) 
                 else: #group chat
                     print(message)

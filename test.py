@@ -58,13 +58,13 @@ def handleClient(conn, addr):
             
             if message != "":
                 print(f"[{addr}] ({nickname}): {message}")
-                broadcast(f"{nickname}: {message}".encode(FORMAT))
                 if message == DISCONNECT_MESSAGE:
                     connected = False
                     conn.send(f"You have left the chat".encode(FORMAT))
                 elif message.startswith("@"):
                     private_chat(message, nickname, private_connections, conn, addr)
-
+                else:
+                    broadcast(f"{nickname}: {message}".encode(FORMAT))
         except Exception as e:
             print(e)
             connected = False
