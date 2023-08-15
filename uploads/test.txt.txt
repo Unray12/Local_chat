@@ -1,1 +1,1 @@
-!DOWNLOAD test.txt.txt
+!DOWLOAD test.txt.txt

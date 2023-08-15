@@ -97,7 +97,7 @@ def handleClient(conn, addr):
                         file = open(UPLOADS_FOLDER + file_name, "rb")
                     except:
                         conn.send("File not found".encode(FORMAT))
-                        return
+                        #return
                     
                     # send the file
                     conn.send(f"!DOWNLOAD {file_name}".encode(FORMAT))
