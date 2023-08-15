@@ -425,12 +425,13 @@ class socketClient:
         screen.see(END)
 
     def recieveFile(self, message):
-        file_path = message[8:]
+        file_path = message[10:]
+        print(file_path)
         file_size_msg = client.recv(1024).decode(FORMAT)
         file_size = int(file_size_msg[10:])
         DOWNLOADS_FOLDER = filedialog.askdirectory(title = "Dowload")
         if (DOWNLOADS_FOLDER != ""):
-            file = open(DOWNLOADS_FOLDER + file_path, "wb")
+            file = open(DOWNLOADS_FOLDER + '/'+ file_path, "wb")
             file_data = client.recv(1024)
             while file_data:
                 file.write(file_data)
@@ -487,8 +488,7 @@ class socketClient:
             except:
                 print("Errors occured !!!")
                 disconnect()
-            processThread = threading.Thread(target=self.processMessage(message))
-            processThread.start()
+            self.processMessage(message)
             # if message == "!NICK":
             #     client.send(nickname.encode(FORMAT))
             # elif message != "":
@@ -527,7 +527,6 @@ class socketClient:
 
     def addPrivateCode(self, code, message):
         return code + message
-
 
     def write(self, message):
         try:
