@@ -100,7 +100,7 @@ def handleClient(conn, addr):
                         return
                     
                     # send the file
-                    conn.send(f"!UPLOAD {file_name}".encode(FORMAT))
+                    conn.send(f"!DOWNLOAD {file_name}".encode(FORMAT))
                     conn.send(f"FILE_SIZE {os.path.getsize(UPLOADS_FOLDER + file_name)}".encode(FORMAT))
                     file_data = file.read(1024)
                     while file_data:

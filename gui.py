@@ -450,7 +450,7 @@ class socketClient:
                     friendName = self.takeName(message, "#")
                     print(friendName) 
                     self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName))
-                elif message.startswith("!UPLOAD"):
+                elif message.startswith("!DOWNLOAD"):
                     self.recieveFile(message)
                 else: #group chat
                     print(message)
@@ -466,7 +466,7 @@ class socketClient:
         try:
             if (message != ""):
                 if self.currentFriend != "GROUP CHAT":
-                    client.send(self.addPrivateCode("@"+self.currentFriend, message).encode(FORMAT))
+                    client.send(self.addPrivateCode("@"+self.currentFriend + " ", message).encode(FORMAT))
                 else:
                     client.send(message.encode(FORMAT))
                     if message == DISCONNECT_MESSAGE:
