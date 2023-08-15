@@ -156,7 +156,6 @@ class socketClient:
             file = open(file_path, "rb")
         except:
             print("File not found")
-            return
 
         # send the file
         file_size = os.path.getsize(file_path)
@@ -171,10 +170,11 @@ class socketClient:
 
     def sendFileBtnFunc(self): #need to create thread
         filePath = filedialog.askopenfilename(title="Upload")
-        print(filePath)
-        fileName = os.path.basename(filePath)
-        self.send_text(f"!UPLOAD {fileName}") #just send file name
-        self.send_file(filePath)
+        if (filePath != ""):
+            print(filePath)
+            fileName = os.path.basename(filePath)
+            self.send_text(f"!UPLOAD {fileName}") #just send file name
+            self.send_file(filePath)
 
     def chatBox(self, name):
         self.chatWindow.deiconify()
