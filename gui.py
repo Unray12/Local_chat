@@ -146,6 +146,14 @@ class socketClient:
             recieveThread = threading.Thread(target = self.recieve)
             recieveThread.start()
 
+    def send(msg):
+        message = msg.encode(FORMAT)
+        messageLength = len(message)
+        sendLength = str(messageLength).encode(FORMAT)
+        sendLength += b' ' * (HEADER - len(sendLength))
+        client.send(sendLength)
+        client.send(message)
+
     def send_text(self, message):
         client.send(message.encode(FORMAT))
 
@@ -159,7 +167,8 @@ class socketClient:
 
         # send the file
         file_size = os.path.getsize(file_path)
-        self.send_text(f"FILE_SIZE {file_size}")
+        #self.send_text(f"FILE_SIZE {file_size}")
+        self.send_text(f"FILE_SIZE {file_size}" + ' '*(1024 -len(f"FILE_SIZE {file_size}")))
         file_data = file.read(1024)
         while file_data:
             client.send(file_data)
@@ -188,7 +197,7 @@ class socketClient:
 
         self.contactListLabel = Label(
             self.chatWindow,
-            text = "Contact list",
+            text = "Online users",
             font = FONT + " 12 bold"
         )
         self.contactListLabel.place(
@@ -211,8 +220,9 @@ class socketClient:
 
         self.friendName = Label(
             self.chatWindow,
-            text = "Name of your friend",
+            text = name,
             bg = "lightblue",
+            font=FONT + " 17 bold"
         )
         self.friendName.place(
             relx = 0.25,
@@ -281,6 +291,8 @@ class socketClient:
             relwidth = 0.2
         )
 
+        self.entryChat.bind("<Return>", lambda event, arg = self.entryChat.get(): self.enterEvent(event, arg))
+        # lambda event, arg = friendName: self.clickLabel(event, arg)
 
         self.sendFileBtn = Button(
             self.inputChat,
@@ -301,7 +313,7 @@ class socketClient:
             relheight = 1,
             #relwidth = 0.01
         )
-        textScrollbar.config(command=self.textBox.yview)
+        textScrollbar.config(command=self.currentScreen.yview)
 
     def displayOnlineUser(self, friendName):
         #display tag name
@@ -312,7 +324,8 @@ class socketClient:
             bg = "white",
             text = friendName,
             borderwidth = 1,
-            relief = SOLID
+            relief = SOLID,
+            font="Arial 10"
         )
         friendLabel.place(
             relx = 0,
@@ -373,11 +386,27 @@ class socketClient:
 
     def clickTagName(self, nameTag):
         indexName = self.onlineList.index(nameTag)
+        indexCurrent = self.onlineScreen.index(self.currentScreen)
+        self.onlineLabel[indexCurrent].config(bg="white")
+
         self.currentFriend = nameTag
         self.currentScreen.place_forget()
         self.currentScreen = self.onlineScreen[indexName]
         self.appearPrivateSreen(indexName)
         self.currentScreen.see(END)
+        self.onlineLabel[indexName].config(bg="#ffe4e1")
+
+        textScrollbar = Scrollbar(self.textBoxFrame)
+        textScrollbar.place(
+            relx = 0.9738,
+            rely = 0,
+            relheight = 1,
+            #relwidth = 0.01
+        )
+        textScrollbar.config(command=self.currentScreen.yview)
+
+    def enterEvent(self, event, message):
+        self.sendFunc(message)
 
     def sendFunc(self, message):
         self.textBox.config(state=DISABLED)
@@ -400,16 +429,53 @@ class socketClient:
         file_size_msg = client.recv(1024).decode(FORMAT)
         file_size = int(file_size_msg[10:])
         DOWNLOADS_FOLDER = filedialog.askdirectory(title = "Dowload")
-        file = open(DOWNLOADS_FOLDER + file_path, "wb")
-        file_data = client.recv(1024)
-        while file_data:
-            file.write(file_data)
-            accum_len = len(file_data)
-            if accum_len >= file_size:
-                break
+        if (DOWNLOADS_FOLDER != ""):
+            file = open(DOWNLOADS_FOLDER + file_path, "wb")
             file_data = client.recv(1024)
-        file.close()
-        print("File downloaded from server.") 
+            while file_data:
+                file.write(file_data)
+                accum_len = len(file_data)
+                if accum_len >= file_size:
+                    break
+                file_data = client.recv(1024)
+            file.close()
+            print("File downloaded from server.") 
+
+    def processMessage(self, message):
+        if message == "!NICK":
+            client.send(nickname.encode(FORMAT))
+        elif message != "":
+            code = message[0:3]
+            if code == "@#@":
+                friendName = message[3:]
+                self.displayOnlineUser(friendName)
+            elif code == "#@#": #new connection, for appear current online 
+                friendList = message[3:].split()
+                for i in range (len(friendList)):
+                    self.displayOnlineUser(friendList[i])
+            elif code == "#$#": #for destroy offline user
+                print("hhh")
+                print(message)
+                offName = self.takeName(message, " ")
+                print("kkk")
+                print(offName)
+                self.destroyOfflineUser(offName)
+                self.writeText(message[3:] + "\n\n", 0)
+            elif code == "$#$": #for recipient in private chat
+                print("bbb")
+                friendName = self.takeName(message, ":")
+                self.writeText(message[3:] + "\n\n", self.onlineList.index(friendName)) 
+            elif code == "$%$": #for sender in private chat
+                print("ccc")
+                friendName = self.takeName(message, "#")
+                print(friendName) 
+                self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName))
+            elif message.startswith("!DOWNLOAD"):
+                self.recieveFile(message)
+            else: #group chat
+                print(message)
+                print("xxx")
+                self.writeText(message + "\n\n", 0) 
 
     def recieve(self):
         global connected
@@ -421,41 +487,42 @@ class socketClient:
             except:
                 print("Errors occured !!!")
                 disconnect()
-            if message == "!NICK":
-                client.send(nickname.encode(FORMAT))
-            elif message != "":
-                code = message[0:3]
-                if code == "@#@":
-                    friendName = message[3:]
-                    self.displayOnlineUser(friendName)
-                    #pass
-                elif code == "#@#": #new connection, for appear current online 
-                    friendList = message[3:].split()
-                    for i in range (len(friendList)):
-                        self.displayOnlineUser(friendList[i])
-                elif code == "#$#": #for destroy offline user
-                    print("hhh")
-                    print(message)
-                    offName = self.takeName(message, " ")
-                    print("kkk")
-                    print(offName)
-                    self.destroyOfflineUser(offName)
-                    self.writeText(message[3:] + "\n\n", 0)
-                elif code == "$#$": #for recipient in private chat
-                    print("bbb")
-                    friendName = self.takeName(message, ":")
-                    self.writeText(message[3:] + "\n\n", self.onlineList.index(friendName)) 
-                elif code == "$%$": #for sender in private chat
-                    print("ccc")
-                    friendName = self.takeName(message, "#")
-                    print(friendName) 
-                    self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName))
-                elif message.startswith("!DOWNLOAD"):
-                    self.recieveFile(message)
-                else: #group chat
-                    print(message)
-                    print("xxx")
-                    self.writeText(message + "\n\n", 0) 
+            processThread = threading.Thread(target=self.processMessage(message))
+            processThread.start()
+            # if message == "!NICK":
+            #     client.send(nickname.encode(FORMAT))
+            # elif message != "":
+            #     code = message[0:3]
+            #     if code == "@#@":
+            #         friendName = message[3:]
+            #         self.displayOnlineUser(friendName)
+            #     elif code == "#@#": #new connection, for appear current online 
+            #         friendList = message[3:].split()
+            #         for i in range (len(friendList)):
+            #             self.displayOnlineUser(friendList[i])
+            #     elif code == "#$#": #for destroy offline user
+            #         print("hhh")
+            #         print(message)
+            #         offName = self.takeName(message, " ")
+            #         print("kkk")
+            #         print(offName)
+            #         self.destroyOfflineUser(offName)
+            #         self.writeText(message[3:] + "\n\n", 0)
+            #     elif code == "$#$": #for recipient in private chat
+            #         print("bbb")
+            #         friendName = self.takeName(message, ":")
+            #         self.writeText(message[3:] + "\n\n", self.onlineList.index(friendName)) 
+            #     elif code == "$%$": #for sender in private chat
+            #         print("ccc")
+            #         friendName = self.takeName(message, "#")
+            #         print(friendName) 
+            #         self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName))
+            #     elif message.startswith("!DOWNLOAD"):
+            #         self.recieveFile(message)
+            #     else: #group chat
+            #         print(message)
+            #         print("xxx")
+            #         self.writeText(message + "\n\n", 0) 
         print("B")
 
     def addPrivateCode(self, code, message):

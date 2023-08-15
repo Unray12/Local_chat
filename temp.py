@@ -1,3 +1,3 @@
-ans = "a b c d "
+ans = "12  "
 
-print("aa" == 'aa')
+print(int(ans) + 12)

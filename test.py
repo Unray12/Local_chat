@@ -2,7 +2,7 @@ import socket
 import threading
 import os
 
-HEADER = 64
+HEADER = 1024
 PORT = 5070
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
@@ -16,6 +16,14 @@ server.bind(ADDR)
 clientsList = []
 nicknames = []
 private_connections = []
+
+def send(msg):
+    message = msg.encode(FORMAT)
+    messageLength = len(message)
+    sendLength = str(messageLength).encode(FORMAT)
+    sendLength += b' ' * (HEADER - len(sendLength))
+    client.send(sendLength)
+    client.send(message)
 
 def broadcast(message):
     for clients in clientsList:
@@ -136,21 +144,20 @@ def start():
 
         broadcast(f"@#@{nickname}".encode(FORMAT)) #for display online user
         conn.send(stringOnlineUser().encode(FORMAT))
+        broadcast(f"{nickname} joined the chat!".encode(FORMAT))
         clientsList.append(conn)
         
-        conn.send("Connected to server!".encode(FORMAT))
-        broadcast(f"{nickname} joined the chat!".encode(FORMAT))
-
-        if not nicknames:
-            conn.send(f"Nobody is in the chat room!".encode(FORMAT))
-        else: 
-            conn.send(f"People currently in the chat room:".encode(FORMAT))
-            for people in nicknames:
-                conn.send(f"{people}; ".encode(FORMAT))
+        
+        # if not nicknames:
+        #     conn.send(f"Nobody is in the chat room!".encode(FORMAT))
+        # else: 
+        #     conn.send(f"People currently in the chat room:".encode(FORMAT))
+        #     for people in nicknames:
+        #         conn.send(f"{people}; ".encode(FORMAT))
         
         nicknames.append(nickname)
         private_connections.append([nickname,conn])
-
+        #conn.send("Connected to server!".encode(FORMAT))
 
         thread = threading.Thread(target = handleClient, args = (conn, addr))
         thread.start()
