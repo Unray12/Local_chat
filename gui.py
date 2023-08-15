@@ -1,7 +1,8 @@
 import socket
 import threading
 from tkinter import *
-from tkinter import Tk, Entry, messagebox
+from tkinter import Tk, Entry, messagebox, filedialog
+import os
 
 HEADER = 1024
 PORT = 5070
@@ -9,6 +10,7 @@ FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "bye"
 SERVER = "172.28.144.1" #IP of server
 FONT = "Helvetica"
+DOWNLOADS_FOLDER = "downloads/"
 
 nickname = ""
 connected = True
@@ -144,6 +146,36 @@ class socketClient:
             recieveThread = threading.Thread(target = self.recieve)
             recieveThread.start()
 
+    def send_text(self, message):
+        client.send(message.encode(FORMAT))
+
+    def send_file(self, file_path):
+        # check if file exists
+        try:
+            print(file_path)
+            file = open(file_path, "rb")
+        except:
+            print("File not found")
+            return
+
+        # send the file
+        file_size = os.path.getsize(file_path)
+        self.send_text(f"FILE_SIZE {file_size}")
+        file_data = file.read(1024)
+        while file_data:
+            client.send(file_data)
+            file_data = file.read(1024)
+        file.close()
+        # client.shutdown(socket.SHUT_WR)
+        print("File sent to server.")
+
+    def sendFileBtnFunc(self): #need to create thread
+        filePath = filedialog.askopenfilename(title="Upload")
+        print(filePath)
+        fileName = os.path.basename(filePath)
+        self.send_text(f"!UPLOAD {fileName}") #just send file name
+        self.send_file(filePath)
+
     def chatBox(self, name):
         self.chatWindow.deiconify()
         # self.chatWindow.title("Chat Box")
@@ -188,7 +220,6 @@ class socketClient:
             relheight = 0.1,
             relwidth = 0.75
         )
-
 
         self.textBoxFrame = Frame(
             self.chatWindow,
@@ -246,10 +277,23 @@ class socketClient:
         self.sendBtn.place(
             relx = 0.8,
             rely = 0,
-            relheight = 1,
+            relheight = 0.5,
             relwidth = 0.2
         )
 
+
+        self.sendFileBtn = Button(
+            self.inputChat,
+            text = "send file",
+            font = FONT + " 10",
+            command=lambda: self.sendFileBtnFunc()
+        )
+        self.sendFileBtn.place(
+            relx = 0.8,
+            rely = 0.5,
+            relheight = 0.5,
+            relwidth = 0.2
+        )
         textScrollbar = Scrollbar(self.textBoxFrame)
         textScrollbar.place(
             relx = 0.9738,
@@ -351,6 +395,22 @@ class socketClient:
         screen.config(state = DISABLED)
         screen.see(END)
 
+    def recieveFile(self, message):
+        file_path = message[8:]
+        file_size_msg = client.recv(1024).decode(FORMAT)
+        file_size = int(file_size_msg[10:])
+        DOWNLOADS_FOLDER = filedialog.askdirectory(title = "Dowload")
+        file = open(DOWNLOADS_FOLDER + file_path, "wb")
+        file_data = client.recv(1024)
+        while file_data:
+            file.write(file_data)
+            accum_len = len(file_data)
+            if accum_len >= file_size:
+                break
+            file_data = client.recv(1024)
+        file.close()
+        print("File downloaded from server.") 
+
     def recieve(self):
         global connected
         while connected:
@@ -389,21 +449,24 @@ class socketClient:
                     print("ccc")
                     friendName = self.takeName(message, "#")
                     print(friendName) 
-                    self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName)) 
+                    self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName))
+                elif message.startswith("!UPLOAD"):
+                    self.recieveFile(message)
                 else: #group chat
                     print(message)
                     print("xxx")
                     self.writeText(message + "\n\n", 0) 
         print("B")
 
-    def addPrivateCode(self, friendName, message):
-        return "@" + friendName + " " + message
+    def addPrivateCode(self, code, message):
+        return code + message
+
 
     def write(self, message):
         try:
             if (message != ""):
                 if self.currentFriend != "GROUP CHAT":
-                    client.send(self.addPrivateCode(self.currentFriend, message).encode(FORMAT))
+                    client.send(self.addPrivateCode("@"+self.currentFriend, message).encode(FORMAT))
                 else:
                     client.send(message.encode(FORMAT))
                     if message == DISCONNECT_MESSAGE:
