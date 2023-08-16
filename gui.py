@@ -388,12 +388,15 @@ class socketClient:
 
     def clickTagName(self, nameTag):
         indexName = self.onlineList.index(nameTag)
-        indexCurrent = self.onlineScreen.index(self.currentScreen)
-        self.onlineLabel[indexCurrent].config(bg="white")
-
-        self.currentFriend = nameTag
-        self.currentScreen.place_forget()
+        
+        if self.currentScreen in self.onlineScreen:
+            indexCurrent = self.onlineScreen.index(self.currentScreen)
+            self.onlineLabel[indexCurrent].config(bg="white")
+            self.currentScreen.place_forget()
+            
         self.currentScreen = self.onlineScreen[indexName]
+        self.currentFriend = nameTag
+        
         self.appearPrivateSreen(indexName)
         self.currentScreen.see(END)
         self.onlineLabel[indexName].config(bg="#ffe4e1")
@@ -544,5 +547,4 @@ class socketClient:
             print("Errors 2 occured !!!")
         #print("a")
         
-
 start = socketClient()
