@@ -128,6 +128,8 @@ class socketClient:
     def goToChat(self, name, serverIP):
         if (name == '' or serverIP == ''):
             messagebox.showerror("Error !!!", "Please enter a name and server IP.")
+        elif name in self.onlineList:
+            messagebox.showerror("Warning !!!", "This name already exists, please choose another name.")
         else:
             self.login.destroy()
             
@@ -135,7 +137,7 @@ class socketClient:
             global nickname
             global SERVER
             nickname = name
-            #SERVER = serverIP
+            SERVER = serverIP
 
             self.chatBox(name)
             self.displayOnlineUser("GROUP CHAT")
@@ -455,27 +457,27 @@ class socketClient:
                 for i in range (len(friendList)):
                     self.displayOnlineUser(friendList[i])
             elif code == "#$#": #for destroy offline user
-                print("hhh")
+                #print("hhh")
                 print(message)
                 offName = self.takeName(message, " ")
-                print("kkk")
-                print(offName)
+                #print("kkk")
+                #print(offName)
                 self.destroyOfflineUser(offName)
                 self.writeText(message[3:] + "\n\n", 0)
             elif code == "$#$": #for recipient in private chat
-                print("bbb")
+                #print("bbb")
                 friendName = self.takeName(message, ":")
                 self.writeText(message[3:] + "\n\n", self.onlineList.index(friendName)) 
             elif code == "$%$": #for sender in private chat
-                print("ccc")
+                #print("ccc")
                 friendName = self.takeName(message, "#")
-                print(friendName) 
+                #print(friendName) 
                 self.writeText(message[4 + len(friendName):] + "\n\n", self.onlineList.index(friendName))
             elif message.startswith("!DOWNLOAD"):
                 self.recieveFile(message)
             else: #group chat
                 print(message)
-                print("xxx")
+                #print("xxx")
                 self.writeText(message + "\n\n", 0) 
 
     def recieve(self):
@@ -522,8 +524,9 @@ class socketClient:
             #     else: #group chat
             #         print(message)
             #         print("xxx")
-            #         self.writeText(message + "\n\n", 0) 
-        print("B")
+            #         self.writeText(message + "\n\n", 0)
+            #  
+        #print("B")
 
     def addPrivateCode(self, code, message):
         return code + message
@@ -539,7 +542,7 @@ class socketClient:
                         connected = False
         except:
             print("Errors 2 occured !!!")
-        print("a")
+        #print("a")
         
 
 start = socketClient()
